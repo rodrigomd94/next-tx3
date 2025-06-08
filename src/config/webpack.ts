@@ -1,6 +1,10 @@
 import { Configuration as WebpackConfig } from 'webpack';
 import { WebpackContext, TX3Config } from '../types/index.js';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export function configureTX3Webpack(
   config: WebpackConfig,
