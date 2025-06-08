@@ -1,5 +1,5 @@
 import { NextConfig } from 'next';
-import { TX3PluginOptions, TX3Config } from '../types/index.js';
+import { TX3PluginOptions, TX3Config, WebpackContext } from '../types/index.js';
 import { configureTX3Webpack } from './webpack.js';
 import { resolveTX3Config, ensureTX3Project, validateTX3Config, isPluginInitialized, markAsInitialized } from '../utils/config.js';
 import { compileTX3 } from '../utils/tx3-compiler.js';
@@ -7,15 +7,17 @@ import { ensureTrixInstalled } from '../utils/trix-installer.js';
 import chalk from 'chalk';
 import path from 'path';
 import fs from 'fs';
+import chokidar from 'chokidar';
+import { Configuration as WebpackConfig } from 'webpack';
 
 // Global watcher to prevent multiple instances
-let globalWatcher: any = null;
+let globalWatcher: ReturnType<typeof chokidar.watch> | null = null;
 
 async function initializeTX3Compilation(config: TX3Config): Promise<void> {
   try {
     // Check if TX3 files exist
     const tx3Files = fs.readdirSync(config.tx3Path)
-      .filter(file => file.endsWith('.tx3'));
+      .filter((file: string) => file.endsWith('.tx3'));
     
     if (tx3Files.length > 0) {
       if (config.verbose) {
@@ -39,7 +41,6 @@ async function initializeTX3Compilation(config: TX3Config): Promise<void> {
     
     // Set up file watching if enabled (only once globally)
     if (config.autoWatch && process.env.NODE_ENV === 'development' && !globalWatcher) {
-      const chokidar = require('chokidar');
       globalWatcher = chokidar.watch(path.join(config.tx3Path, '*.tx3'));
       
       globalWatcher.on('change', async (filePath: string) => {
@@ -83,7 +84,7 @@ export function withTX3(
         markAsInitialized();
         return {
           ...nextConfig,
-          webpack: (config, options) => {
+          webpack: (config: WebpackConfig, options: WebpackContext) => {
             configureTX3Webpack(config, options, resolvedTX3Config);
             if (typeof nextConfig.webpack === 'function') {
               return nextConfig.webpack(config, options);
@@ -123,7 +124,7 @@ export function withTX3(
   return {
     ...nextConfig,
     
-    webpack: (config, options) => {
+    webpack: (config: WebpackConfig, options: WebpackContext) => {
       // Apply TX3 webpack configuration
       configureTX3Webpack(config, options, resolvedTX3Config);
       
